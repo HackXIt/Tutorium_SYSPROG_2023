@@ -1,9 +1,7 @@
 ROOT=/home/rini-debian/git-stash/Tutorium_SYSPROG_2023/
 C=gcc
-INC=-iquote${ROOT}/TUT_Assignment02/inc
+INC=-iquote${ROOT}/TUT_Assignment01/inc
 CFLAGS=-Wall -Wextra -pedantic -g -Wno-unused-parameter
-POPENTEST=-lpopentest -ldl
-# CFLAGS=-g -Wno-unused-parameter
 BUILD=./build/
 # VPATH:=src:build
 vpath %.o ./build
@@ -20,20 +18,17 @@ ${BUILD}%.o: %.c %.h
 
 # Here are my targets
 
-all: pipetest
+all: myfind
 
-pipetest: pipetest.c $(BUILD)mypopen.o
-	$(CC) $(CFLAGS) $(INC) $^ -o $(BUILD)$@
+myfind: main.c
+	$(CC) $(CFLAGS) $^ -o $(BUILD)myfind
 
 clean:
-	rm $(BUILD)*.o $(BUILD)pipetest
+	rm $(BUILD)*.o $(BUILD)myfind
 
-popentest: $(BUILD)mypopen.o
-	$(CC) $(CFLAGS) $^ -o $(BUILD)$@ $(POPENTEST)
+test: myfind
+	./test_myfind.sh
 
-instlib:
-	sudo cp ./inc/*.a /usr/local/lib
-
-.PHONY: clean instlib
+.PHONY: clean
 
 # TODO Doxygen Target
