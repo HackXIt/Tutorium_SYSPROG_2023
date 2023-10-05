@@ -13,6 +13,7 @@
 #include <grp.h>
 #include <time.h>
 
+/*
 typedef struct options {
     bool print;
     bool ls;
@@ -24,37 +25,49 @@ typedef struct options {
     bool type;
     char type_c;        // <t> for -type
 } options_t;
+*/
+typedef struct option {
+    char *option;
+    char *parameter;
+    struct option *next;
+} option_t;
 
+typedef struct option_list {
+    int options;
+    option_t *first;
+    option_t *last;
+} option_list_t;
 //#define MAX_FULL_PATH   1024
 
 
 
 // Function prototypes
-void traverse_directory(const char *dir_path);
-options_t parse_options(char *argv[]);
+void traverse_directory(const char *dir_path, option_list_t * options);
+options_t parse_options(char *argv[], option_list_t * options);
 void write_permissions(mode_t fileMode);
 
 int main(int argc, char *argv[]) {
-    char *starting_point;
+    char *starting_point = ".";
+    option_list_t options = {.options = 0, .first = NULL, .last = NULL};
 
     // Step 1: Parsing & Validation
-    if(argc < 2) {
-        starting_point = "."; // current working directory = pwd
-    } else {
-        if(argc > 2) {
-            options_t options = parse_options(argv);
-        }
-        traverse_directory(argv[1]);
-    }
+    parse_options(argv, &options);
 
     // Step 2: Iterating recursively
-    traverse_directory(starting_point);
+    // 2nd statement in the if won't be evaluated when no parameters were provided, so it is safe to access
+    if(argc > 2 && argv[1][0] != '-') { // when 1st parameter isn't an option, use provided starting directory
+        traverse_directory(argv[1], &options);
+    } else { // otherwise use default current working directory
+        traverse_directory(starting_point, &options);
+    }
 
     // Program done
     return EXIT_SUCCESS;
 }
 
-void traverse_directory(const char *dir_path) {
+// Main functionality
+
+int traverse_directory(const char *dir_path, option_list_t * options) {
     struct dirent *entry;
     DIR *dir = opendir(dir_path);
 
@@ -64,31 +77,44 @@ void traverse_directory(const char *dir_path) {
         return;
     }
 
-    printf("%s\n", dir_path); // for "." and ".."
+    //printf("%s\n", dir_path); // for "." and ".."
     while ((entry = readdir(dir)) != NULL) {
+        /*
         if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            //
             //printf("%s\n", entry->d_name);
             break;
         }
-        printf("%s/%s\n", dir_path, entry->d_name);
+        */
+        option_t *current = options->first;
+        while(current != NULL) {
+
+        }
 
         struct stat sb;
         char full_path[1024];
         snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
 
         if(stat(full_path, &sb) == 0 && S_ISDIR(sb.st_mode)) {
-            traverse_directory(full_path);
+            traverse_directory(full_path, options);
         }
     }
 }
 
-options_t parse_options(char *argv[]) {
+// Argument parsing
+
+options_t parse_options(char *argv[], option_list_t * options) {
     char **current = argv;
-    options_t options;
 
     while(*current != NULL) {
         if(strcmp(*current, "-print") == 0) {
-            options.print = true;
+            option_t *print = (option_t*)calloc(sizeof(option_t), 1);
+            if(print == NULL) {
+                fprintf(stderr, "Out of memory!");
+            }
+            print->option = calloc(sizeof(char), strlen("-print")+1);
+            strcpy(print->option, "-print");
+            options.
         } else if(strcmp(*current, "-ls") == 0) {
             options.ls = true;
         } else if(strcmp(*current, "-user") == 0) {
@@ -107,6 +133,10 @@ options_t parse_options(char *argv[]) {
     }
 
     return options;
+}
+
+void print_default(char *path, char *entry_name) {
+    printf("%s/%s\n", path, entry_name);
 }
 
 // Option handlers
@@ -156,8 +186,14 @@ void print_ls(struct stat sb, const char *file_path) {
     printf("%s\n", file_path);
 }
 
+void print_name(char *name, char *pattern) {
+    // TODO do file mat
+}
+
+// Helper functions
+
 void write_permissions(mode_t mode) {
-    // das ? ist ein ternary operator => kurzschreibweise von if-else
+    // the '?' is a ternary operator => short way of writing if-else
     printf((mode & S_IRUSR) ? "r" : "-");
     printf((mode & S_IWUSR) ? "w" : "-");
     printf((mode & S_IXUSR) ? "x" : "-");
