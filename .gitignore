@@ -1,3 +1,9 @@
+#VSCode Environment
+**/.vscode/.history
+
+#Build files
+**/build/
+
 # Prerequisites
 *.d
 

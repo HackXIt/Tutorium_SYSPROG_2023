@@ -1,0 +1,35 @@
+{
+    "folders": [
+        {
+            "name": "Root",
+            "path": "."
+        },
+        {
+            "name": "Assignment 01",
+            "path": "./TUT_Assignment01"
+        },
+        {
+            "name": "Assignment 02",
+            "path": "./TUT_Assignment02"
+        },
+        {
+            "name": "Assignment 03",
+            "path": "./TUT_Assignment03"
+        }
+    ],
+    "settings": {
+        "files.exclude": {
+            "**/.git": true,
+            "**/.svn": true,
+            "**/.hg": true,
+            "**/CVS": true,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true,
+            ".vscode/.history": true,
+            // Exclude sub-workspaces from root folder
+            "**/TUT_Assignment01": true,
+            "**/TUT_Assignment02": true,
+            "**/TUT_Assignment03": true
+        }
+    }
+}
