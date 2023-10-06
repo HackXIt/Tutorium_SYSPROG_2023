@@ -1,0 +1,9 @@
+<toolSet name="External Tools">
+  <tool name="build myfind" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
+    <exec>
+      <option name="COMMAND" value="$USER_HOME$/git-stash/Tutorium_SYSPROG_2023/TUT_Assignment01/main.c" />
+      <option name="PARAMETERS" value="-o myfind" />
+      <option name="WORKING_DIRECTORY" value="$USER_HOME$/git-stash/Tutorium_SYSPROG_2023/TUT_Assignment01" />
+    </exec>
+  </tool>
+</toolSet>

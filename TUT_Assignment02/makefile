@@ -1,4 +1,4 @@
-ROOT=/home/rini-debian/git-stash/Tutorium_SYSPROG_2023/
+ROOT=/home/rini/git-stash/Tutorium_SYSPROG_2023/
 C=gcc
 INC=-iquote${ROOT}/TUT_Assignment02/inc
 CFLAGS=-Wall -Wextra -pedantic -g -Wno-unused-parameter
@@ -16,6 +16,11 @@ vpath %.h ./inc
 
 # Automatic variable for object files
 ${BUILD}%.o: %.c %.h
+	$(CC) $(CFLAGS) $(INC) -c $< -o $@
+
+# Automatic variable for object files without headers
+# MUST be after the automatic variable above
+${BUILD}%.o: %.c
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 # Here are my targets

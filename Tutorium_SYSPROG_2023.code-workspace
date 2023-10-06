@@ -30,6 +30,10 @@
             "**/TUT_Assignment01": true,
             "**/TUT_Assignment02": true,
             "**/TUT_Assignment03": true
+        },
+        "files.associations": {
+            "type_traits": "c",
+            "typeinfo": "c"
         }
     }
 }

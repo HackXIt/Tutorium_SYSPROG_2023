@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C Debug (client)",
+            "name": "C Debug (receiver)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/client",
+            "program": "${workspaceFolder}/build/receiver",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -13,13 +13,13 @@
             "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb", // Change this to the path of your gdb executable
-            "preLaunchTask": "Build Assignment 3 client (make)"
+            "preLaunchTask": "Build Assignment 3 receiver (make)"
         },
         {
-            "name": "C Debug (server)",
+            "name": "C Debug (sender)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/server",
+            "program": "${workspaceFolder}/build/sender",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -27,7 +27,7 @@
             "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb", // Change this to the path of your gdb executable
-            "preLaunchTask": "Build Assignment 3 server (make)"
+            "preLaunchTask": "Build Assignment 3 sender (make)"
         }
     ]
 }

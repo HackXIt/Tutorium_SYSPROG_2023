@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CLionExternalBuildManager">
+    <target id="4ad75ef8-4e58-4918-b80e-d630972c433e" name="myfind target" defaultType="TOOL">
+      <configuration id="f00206e4-f386-4744-afe3-483ff7d82927" name="myfind target">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_build myfind" />
+        </build>
+        <clean type="TOOL">
+          <tool actionId="Tool_External Tools_build myfind" />
+        </clean>
+      </configuration>
+    </target>
+  </component>
+</project>
