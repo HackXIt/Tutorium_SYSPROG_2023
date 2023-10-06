@@ -1,5 +1,6 @@
-#VSCode Environment
+#Environment specific
 **/.vscode/.history
+.idea
 
 #Build files
 **/build/
