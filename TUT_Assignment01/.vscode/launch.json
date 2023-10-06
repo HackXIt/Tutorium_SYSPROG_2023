@@ -6,14 +6,25 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/myfind",
-            "args": [],
-            "stopAtEntry": false,
+            "args": [
+                "-type",
+                "f"
+            ],
+            "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb", // Change this to the path of your gdb executable
             "preLaunchTask": "Build Assignment 1 (make)"
         }
+    ],
+    "inputs": [
+        {
+            "id": "args",
+            "type": "promptString",
+            "description": "args for myfind",
+            "default": ""
+        },
     ]
 }

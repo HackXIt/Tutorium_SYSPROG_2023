@@ -1,43 +1,43 @@
-//
-// Created by rini on 29.09.23.
-//
+/*
+ * File: main.c
+ * Created on: Friday, 2023-10-06 @ 14:28:34
+ * Author: HackXIt (<hackxit@gmail.com>)
+ * -----
+ * Last Modified: Friday, 2023-10-06 @ 22:07:53
+ * Modified By:  HackXIt (<hackxit@gmail.com>) @ dev-machine
+ * ----- About the code -----
+ * Purpose:
+ *
+ * Example call:
+ *
+ * Example Output:
+ *
+ * References:
+ */
 
 // Imports
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <ctype.h>    // for isdigit() and isalpha()
-#include <stdio.h>    // for printf()
-#include <stdbool.h>  // for bool type
-#include <stdlib.h>   // for EXIT_SUCCESS
-#include <string.h>   // for strcmp()
-#include <dirent.h>   // for directory traversal
-#include <sys/stat.h> // for stat() and struct stat
-#include <pwd.h>      // for username matching
-#include <grp.h>      // for groupname matching
-#include <time.h>     // for time-related functions (strftime())
-#include <fnmatch.h>  // for file-name matching
-
-/*
-typedef struct options {
-    bool print;
-    bool ls;
-    bool user;
-    char username;      // <name> for -user
-    int uid;            // <uid> for -user
-    bool name;
-    char *pattern;      // <pattern> for -name
-    bool type;
-    char type_c;        // <t> for -type
-} options_t;
-*/
+#include <sys/types.h> // for opendir(), readdir(), closedir()
+#include <sys/stat.h>  // for types of files (S_IFMT, S_IFBLK, S_IFCHR, S_IFDIR, S_IFIFO, S_IFLNK, S_IFREG, S_IFSOCK)
+#include <ctype.h>     // for isdigit() and isalpha()
+#include <stdio.h>     // for printf()
+#include <stdbool.h>   // for bool type
+#include <stdlib.h>    // for EXIT_SUCCESS
+#include <string.h>    // for strcmp()
+#include <dirent.h>    // for directory traversal
+#include <sys/stat.h>  // for stat() and struct stat
+#include <pwd.h>       // for username matching
+#include <grp.h>       // for groupname matching
+#include <time.h>      // for time-related functions (strftime())
+#include <fnmatch.h>   // for file-name matching
 
 typedef enum options
 {
-    PRINT, // -print
-    LS,    // -ls
-    USER,  // -user <name>|<uid>
-    NAME,  // -name <pattern>
-    TYPE   // -type <t>
+    DEFAULT, // default option
+    PRINT,   // -print
+    LS,      // -ls
+    USER,    // -user <name>|<uid>
+    NAME,    // -name <pattern>
+    TYPE     // -type <t>
 } options_t;
 
 typedef struct option
@@ -51,41 +51,37 @@ typedef struct option
 typedef struct option_list
 {
     int option_count; // amount of options
-    option_t *first;  // first option
-    option_t *last;   // last option
+    char *starting_point;
+    option_t *first; // first option
+    option_t *last;  // last option
 } option_list_t;
-// #define MAX_FULL_PATH   1024
+// #define MAX_FULL_PATH   1024This is my main function for traversing the directories:
 
 // Function prototypes
 void traverse_directory(const char *dir_path, option_list_t *options);
-void parse_options(char *argv[], option_list_t *options);
+void parse_options(int argc, char *argv[], option_list_t *options);
 void print_default(char *path, char *entry_name);
-void print_print(struct stat sb, const char *file_path);
+void print_print(const char *file_path);
 void print_ls(struct stat sb, const char *file_path);
 void print_user(const char *file_path, struct stat sb, char *user);
-void print_name(char *name, char *pattern);
+void print_name(char *file_path, char *name, char *pattern);
 void print_type(const char *file_path, struct stat sb, char *type);
+option_t *initialize_option(options_t option_type, char *option);
+void clear_options(option_list_t *options);
 void write_permissions(mode_t fileMode);
 int is_string_or_id(char *input);
 
 int main(int argc, char *argv[])
 {
-    char *starting_point = ".";
-    option_list_t options = {.option_count = 0, .first = NULL, .last = NULL};
+    option_list_t options = {.option_count = 0, .starting_point = ".", .first = NULL, .last = NULL};
 
     // Step 1: Parsing & Validation
-    parse_options(argv, &options);
+    parse_options(argc, argv, &options);
 
     // Step 2: Iterating recursively
-    // 2nd statement in the if won't be evaluated when no parameters were provided, so it is safe to access
-    if (argc > 2 && argv[1][0] != '-')
-    { // when 1st parameter isn't an option, use provided starting directory
-        traverse_directory(argv[1], &options);
-    }
-    else
-    { // otherwise use default current working directory
-        traverse_directory(starting_point, &options);
-    }
+    traverse_directory(options.starting_point, &options); // starting point is handled by parse_options()
+
+    clear_options(&options);
 
     // Program done
     return EXIT_SUCCESS;
@@ -97,6 +93,7 @@ void traverse_directory(const char *dir_path, option_list_t *options)
 {
     struct dirent *entry;
     DIR *dir = opendir(dir_path);
+    bool print_starting_point = true;
 
     // Error handling von opendir()
     if (dir == NULL)
@@ -105,156 +102,169 @@ void traverse_directory(const char *dir_path, option_list_t *options)
         return;
     }
 
-    // printf("%s\n", dir_path); // for "." and ".."
     while ((entry = readdir(dir)) != NULL)
     {
-        /*
-        if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            //
-            //printf("%s\n", entry->d_name);
-            break;
-        }
-        */
-        struct stat sb;
-        char full_path[1024];
-        snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
-
-        if (stat(full_path, &sb) == 0)
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
         {
-            option_t *current = options->first;
-            if (current == NULL)
+            // Skip "." and ".." entries (current and parent directory = infinite loop)
+            continue;
+        }
+        struct stat sb;
+        char file_full_path[1024];
+        char file_dir_path[1024];
+        snprintf(file_full_path, sizeof(file_full_path), "%s/%s", dir_path, entry->d_name);
+        snprintf(file_dir_path, sizeof(file_dir_path), "%s", dir_path);
+
+        // fill sb with information about the file
+        if (stat(file_full_path, &sb) != 0)
+        {
+            printf("Failed to stat file %s: ", file_full_path);
+            perror(""); // prints meaning of errno
+            continue;
+        }
+
+        // print directory structure
+        option_t *current = options->first;
+        while (current != NULL)
+        {
+            // handle special cases where starting point is not needed
+            if ((current->option_type == NAME) ||
+                (current->option_type == TYPE && strcmp(current->parameter, "d") != 0))
             {
-                print_default(full_path, entry->d_name);
+                print_starting_point = false;
             }
-            while (current != NULL)
+            // print starting point (conditionally)
+            if (print_starting_point && strcmp(dir_path, options->starting_point) == 0)
             {
-                switch (current->option_type)
-                {
-                case PRINT:
-                    print_print(sb, entry->d_name);
-                    break;
-                case LS:
-                    print_ls(sb, entry->d_name);
-                    break;
-                case USER:
-                    print_user(entry->d_name, sb, current->parameter);
-                    break;
-                case NAME:
-                    print_name(entry->d_name, current->parameter);
-                    break;
-                case TYPE:
-                    print_type(entry->d_name, sb, current->parameter);
-                    break;
-                }
-                current = current->next;
+                printf("%s\n", dir_path); // for printing the starting point
+                print_starting_point = false;
             }
-            if (S_ISDIR(sb.st_mode))
+            switch (current->option_type)
             {
-                traverse_directory(full_path, options);
+            case DEFAULT:
+                print_default(file_dir_path, entry->d_name);
+                break;
+            case PRINT:
+                print_print(file_full_path);
+                break;
+            case LS:
+                print_ls(sb, entry->d_name);
+                break;
+            case USER:
+                print_user(file_full_path, sb, current->parameter);
+                break;
+            case NAME:
+                print_name(file_dir_path, entry->d_name, current->parameter);
+                break;
+            case TYPE:
+                print_type(file_full_path, sb, current->parameter);
+                break;
             }
+            current = current->next;
+        }
+        if (S_ISDIR(sb.st_mode))
+        {
+            traverse_directory(file_full_path, options);
         }
     }
 }
 
 // Argument parsing
 
-void parse_options(char *argv[], option_list_t *options)
+void parse_options(int argc, char *argv[], option_list_t *options)
 {
-    char **current = argv;
+    option_t *option = NULL;
+    int next_arg = 1;
 
-    while (*current != NULL)
+    while (next_arg < argc)
     {
-        option_t *option = NULL;
-        if (strcmp(*current, "-print") == 0)
+        bool has_parameter = false;
+        if (strcmp(argv[next_arg], "-print") == 0)
         {
-            option = (option_t *)calloc(sizeof(option_t), 1);
-            if (option == NULL)
-            {
-                fprintf(stderr, "Out of memory!");
-            }
-            option->option_type = PRINT;
-            option->option = calloc(sizeof(char), strlen("-print") + 1);
-            strcpy(option->option, "-print");
-            option->parameter = NULL;
+            option = initialize_option(PRINT, "-print");
         }
-        else if (strcmp(*current, "-ls") == 0)
+        else if (strcmp(argv[next_arg], "-ls") == 0)
         {
-            option = (option_t *)calloc(sizeof(option_t), 1);
-            if (option == NULL)
-            {
-                fprintf(stderr, "Out of memory!");
-            }
-            option->option_type = LS;
-            option->option = calloc(sizeof(char), strlen("-ls") + 1);
-            strcpy(option->option, "-ls");
-            option->parameter = NULL;
+            option = initialize_option(LS, "-ls");
         }
-        else if (strcmp(*current, "-user") == 0)
+        else if (strcmp(argv[next_arg], "-user") == 0)
         {
-            option = (option_t *)calloc(sizeof(option_t), 1);
-            if (option == NULL)
-            {
-                fprintf(stderr, "Out of memory!");
-            }
-            option->option_type = USER;
-            option->option = calloc(sizeof(char), strlen("-user") + 1);
-            strcpy(option->option, "-user");
-            option->parameter = *(current + 1);
+            option = initialize_option(USER, "-user");
+            has_parameter = true;
         }
-        else if (strcmp(*current, "-name") == 0)
+        else if (strcmp(argv[next_arg], "-name") == 0)
         {
-            option = (option_t *)calloc(sizeof(option_t), 1);
-            if (option == NULL)
-            {
-                fprintf(stderr, "Out of memory!");
-            }
-            option->option_type = NAME;
-            option->option = calloc(sizeof(char), strlen("-name") + 1);
-            strcpy(option->option, "-name");
-            option->parameter = *(current + 1);
+            option = initialize_option(NAME, "-name");
+            has_parameter = true;
         }
-        else if (strcmp(*current, "-type") == 0)
+        else if (strcmp(argv[next_arg], "-type") == 0)
         {
-            option = (option_t *)calloc(sizeof(option_t), 1);
-            if (option == NULL)
-            {
-                fprintf(stderr, "Out of memory!");
-            }
-            option->option_type = TYPE;
-            option->option = calloc(sizeof(char), strlen("-type") + 1);
-            strcpy(option->option, "-type");
-            option->parameter = *(current + 1);
+            option = initialize_option(TYPE, "-type");
+            has_parameter = true;
         }
         else
         {
-            fprintf(stderr, "Unknown option: %s\n", *current);
+            if (next_arg == 1)
+            {
+                options->starting_point = argv[next_arg];
+            }
+            else
+            {
+                fprintf(stderr, "Unknown option: %s\n", argv[next_arg]);
+                exit(EXIT_FAILURE);
+            }
+        }
+        if (has_parameter)
+        {
+            if (next_arg + 1 >= argc)
+            {
+                // Handles case of missing parameter for last option
+                fprintf(stderr, "Missing parameter for option %s\n", option->option);
+            }
+            else if (argv[next_arg + 1][0] == '-')
+            {
+                // Handles case of missing parameter for option in the middle
+                fprintf(stderr, "Missing parameter for option %s\n", option->option);
+            }
+            option->parameter = argv[++next_arg]; // same as doing "next_arg = next_arg + 1" and after that "argv[next_arg]"
         }
         if (option != NULL)
         {
-            if (options->first == NULL)
+            if (options->first == NULL) // first option
             {
                 options->first = option;
                 options->last = option;
             }
-            else
+            else // append to last option
             {
                 options->last->next = option;
             }
+            // set last option and increment option count
             options->last = option;
             options->option_count++;
         }
-        current++;
+        next_arg++;
+    }
+    // add default option if no options were given
+    if (options->first == NULL)
+    {
+        option = initialize_option(DEFAULT, "default");
+        options->first = option;
+        options->last = option;
+        options->option_count++;
     }
 }
+
+// Printing functions
 
 void print_default(char *path, char *entry_name)
 {
     printf("%s/%s\n", path, entry_name);
 }
 
-// Option handlers
+// Option handlers for printing various options
 
-void print_print(struct stat sb, const char *file_path)
+void print_print(const char *file_path)
 {
     printf("%s\n", file_path);
 }
@@ -336,11 +346,11 @@ void print_user(const char *file_path, struct stat sb, char *user)
     }
 }
 
-void print_name(char *name, char *pattern)
+void print_name(char *file_path, char *name, char *pattern)
 {
     if (fnmatch(pattern, name, 0) == 0)
     {
-        printf("%s\n", name);
+        printf("%s/%s\n", file_path, name);
     }
 }
 
@@ -380,7 +390,34 @@ void print_type(const char *file_path, struct stat sb, char *type)
     }
 }
 
-// Helper functions
+// helper functions for argument parsing
+option_t *initialize_option(options_t option_type, char *option)
+{
+    option_t *new_option = (option_t *)calloc(sizeof(option_t), 1);
+    if (new_option == NULL)
+    {
+        fprintf(stderr, "Out of memory!");
+        exit(EXIT_FAILURE);
+    }
+    new_option->option_type = option_type;
+    new_option->option = calloc(sizeof(char), strlen(option) + 1);
+    strcpy(new_option->option, option);
+    return new_option;
+}
+
+void clear_options(option_list_t *options)
+{
+    option_t *current = options->first;
+    while (current != NULL)
+    {
+        option_t *next = current->next; // save pointer to next option
+        free(current->option);          // frees the memory allocated for the option string
+        free(current);                  // frees the memory allocated for the option struct
+        current = next;
+    }
+}
+
+// Helper functions for options
 
 void write_permissions(mode_t mode)
 {
